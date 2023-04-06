@@ -4,13 +4,7 @@ from socket import AF_INET, socket, SOCK_STREAM
 from threading import Thread
 import sqlite3
 
-""" 
 
-
-
-
-
-"""
 
 clients  = {}
 addresses = {}
@@ -23,9 +17,7 @@ ADDR = (HOST,PORT)
 SERVER = socket(AF_INET,SOCK_STREAM)
 SERVER.bind(ADDR)
 
-"""
 
-"""
 def privee(client,name):
     client.send(f"donner le nom de destinateur".encode('utf-8'))
     nom = client.recv(BUFFSIZE).decode("utf8")
@@ -64,9 +56,7 @@ def acceptIncomingConnections():
         Thread(target=handleClient, args=(client,)).start()
 
 
-"""
 
-"""
 def handleClient(client):
     name = client.recv(BUFFSIZE).decode("utf8")
     client.send(bytes("bonjour %s, ecrire\n'\history':historique\n'\online': les utilisateurs connectes\n'\private' : privee" % name,'utf8'))
@@ -107,9 +97,7 @@ def handleClient(client):
 
            
 
-"""
 
-"""
 
 def broadcast(msg,prefix = ""):
     for client in clients:
