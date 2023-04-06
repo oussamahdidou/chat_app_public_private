@@ -1,5 +1,4 @@
-# chat_app_public_private
-this app offer an experience of chat in public and in private between everyone who is connected in the server 
+
 from socket import AF_INET, socket, SOCK_STREAM
 from threading import Thread
 import sqlite3
