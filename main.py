@@ -1,124 +1,74 @@
-#code_cote_serveur
 from socket import AF_INET, socket, SOCK_STREAM
 from threading import Thread
-import sqlite3
-
-""" 
-
-
-
-
-
-"""
-
-clients  = {}
-addresses = {}
-private={}
-names=[]
-HOST = '127.0.0.1'
-PORT = 5545
-BUFFSIZE = 1024
-ADDR = (HOST,PORT)
-SERVER = socket(AF_INET,SOCK_STREAM)
-SERVER.bind(ADDR)
-
-"""
-
-"""
-def privee(client,name):
-    client.send(f"donner le nom de destinateur".encode('utf-8'))
-    nom = client.recv(BUFFSIZE).decode("utf8")
-    msg=" "
-    while msg!=bytes("'\end'", "utf8"):
-        msg = client.recv(BUFFSIZE)
-        client.send(bytes("privee:"+name+": ",'utf8')+msg)
-        private[nom].send(bytes("privee:"+name+": ",'utf8')+msg)
-        
-
-def connected() :
-    onlin=""
-    for row in names:
-        onlin+=f"{row}\n"
-   
-    return onlin
-
-def history(name):
-    base=sqlite3.connect("test server.DB")
-    pointeur=base.cursor()
-    print("base de donne connecte")
-    pointeur.execute('SELECT * FROM server')
-    hist=""
-    for row in pointeur:
-        msg,use=row
-        hist+=f"{msg} {use}\n"
-    base.commit()
-    base.close()
-    return hist
-def acceptIncomingConnections():
-    while True:
-        client, clientAddress = SERVER.accept()
-        print("%s:%s has connected." % clientAddress)
-        client.send(bytes("Welcome , entrer le nom", "utf8"))
-        addresses[client] = clientAddress
-        Thread(target=handleClient, args=(client,)).start()
+import tkinter
 
 
 """
 
 """
-def handleClient(client):
-    name = client.recv(BUFFSIZE).decode("utf8")
-    client.send(bytes("bonjour %s, ecrire\n'\history':historique\n'\online': les utilisateurs connectes\n'\private' : privee" % name,'utf8'))
-    msg = '%s connected' % name
-    broadcast(bytes(msg, 'utf8'))
-    clients[client] = name
-    private[name]=client
-    names.append(name)
-    
-    while True:
-        msg = client.recv(BUFFSIZE)
-        if msg == bytes("'exit'", "utf8"):
-            client.send(bytes("'exit'", "utf8"))
-            client.close()
-            del clients[client]
-            del private[name]
-            names.remove(name)
-
-            broadcast(bytes("%s has left the chat." % name, "utf8"))
+def receive():
+    stop = False
+    while True and not stop:
+        try:
+            msg = clientSocket.recv(BUFFSIZE).decode('utf8')
+            msgList.insert(tkinter.END,msg+'\n')
+        except OSError:
+            cleanAndClose()
             break
-        elif msg== bytes("'\history'","utf8"):
-            historique=history(name)
-            client.send(f"{historique}".encode('utf-8'))
-        elif msg== bytes("'\online'","utf8"):
-             onlin=connected()
-             client.send(f"{onlin}".encode('utf-8'))
-        elif msg== bytes("'\private'","utf8"):
-            privee(client,name)
-        else:
-            broadcast(msg, name+": ")
-            msg=msg.decode('utf8')
-            base=sqlite3.connect("test server.DB")
-            pointeur=base.cursor()
-            pack=(msg,name)
-            request=pointeur.execute(' INSERT INTO server VALUES (?,?)',pack)
-            base.commit()
-            base.close()
-
-           
 
 """
 
 """
+def send(event=None):
+    msg = myMsg.get()
+    myMsg.set("")
+    clientSocket.send(bytes(msg,'utf8'))
+    if msg is "'exit'":
+        clientSocket.close()
+        cleanAndClose()
+        top.quit()
 
-def broadcast(msg,prefix = ""):
-    for client in clients:
-        client.send(bytes(prefix,'utf8')+msg)
+"""
 
+"""
+def cleanAndClose(event=None):
+    myMsg.set("'exit'")
+    send()
+    top.destroy()
+    stop = True
 
-if __name__ == "__main__":
-    SERVER.listen(5)  # Listens for 5 connections at max.
-    print("Waiting for a new connection...")
-    ACCEPT_THREAD = Thread(target=acceptIncomingConnections)
-    ACCEPT_THREAD.start()  # Starts the infinite loop.
-    ACCEPT_THREAD.join()
-    SERVER.close()
+if __name__ == '__main__':
+    top = tkinter.Tk()
+    top.title('hdidou and tahiri')
+    messageFrame = tkinter.Frame(top)
+    scrollbar = tkinter.Scrollbar(messageFrame)
+
+    msgList = tkinter.Text(messageFrame, width = 50, yscrollcommand = scrollbar.set)
+    scrollbar.pack(side=tkinter.RIGHT, fill=tkinter.Y)
+    msgList.pack(side=tkinter.LEFT, fill=tkinter.BOTH)
+    msgList.pack(fill = tkinter.X)
+    messageFrame.pack()
+
+    myMsg = tkinter.StringVar()
+    myMsg.set("Click to type")
+    entryField = tkinter.Entry(top,textvariable = myMsg)
+    entryField.bind("<Return>", send)
+    entryField.pack()
+    sendButton = tkinter.Button(top, text = 'Send', command = send, height = 1, width = 7)
+    sendButton.pack()
+
+    top.protocol("WM_DELETE_WINDOW", cleanAndClose)
+
+    HOST = input('IP Address: ')
+    PORT = input('Entrer PORT : ')
+    PORT = 5545 if not PORT else int(PORT)
+
+    BUFFSIZE = 1024
+    ADDR = (HOST, PORT)
+    clientSocket = socket(AF_INET, SOCK_STREAM)
+    clientSocket.connect(ADDR)
+
+    receiveThread = Thread(target=receive)
+    receiveThread.start()
+    tkinter.mainloop()  
+    receiveThread.join()
