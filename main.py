@@ -1,3 +1,4 @@
+#code_cote_serveur
 from socket import AF_INET, socket, SOCK_STREAM
 from threading import Thread
 import sqlite3
